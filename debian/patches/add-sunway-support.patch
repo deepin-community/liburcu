@@ -1,0 +1,154 @@
+Origin: uos
+Last-Update: 2022-07-26
+
+--- liburcu-0.13.0.orig/LICENSE
++++ liburcu-0.13.0/LICENSE
+@@ -47,6 +47,7 @@ uatomic/alpha.h
+ uatomic/mips.h
+ uatomic/nios2.h
+ uatomic/s390.h
++uatomic/sw64.h
+ system.h
+ 
+ 
+--- liburcu-0.13.0.orig/include/Makefile.am
++++ liburcu-0.13.0/include/Makefile.am
+@@ -15,6 +15,7 @@ nobase_include_HEADERS = \
+ 	urcu/arch/s390.h \
+ 	urcu/arch/sparc64.h \
+ 	urcu/arch/superh.h \
++	urcu/arch/sw64.h \
+ 	urcu/arch/tile.h \
+ 	urcu/arch/x86.h \
+ 	urcu/call-rcu.h \
+@@ -76,6 +77,7 @@ nobase_include_HEADERS = \
+ 	urcu/uatomic/s390.h \
+ 	urcu/uatomic/sparc64.h \
+ 	urcu/uatomic/superh.h \
++	urcu/uatomic/sw64.h \
+ 	urcu/uatomic/tile.h \
+ 	urcu/uatomic/x86.h \
+ 	urcu/urcu-bp.h \
+--- liburcu-0.13.0.orig/include/Makefile.in
++++ liburcu-0.13.0/include/Makefile.in
+@@ -331,6 +331,7 @@ nobase_include_HEADERS = \
+ 	urcu/arch/riscv.h \
+ 	urcu/arch/s390.h \
+ 	urcu/arch/sparc64.h \
++	urcu/arch/sw64.h \
+ 	urcu/arch/tile.h \
+ 	urcu/arch/x86.h \
+ 	urcu/call-rcu.h \
+@@ -391,6 +392,7 @@ nobase_include_HEADERS = \
+ 	urcu/uatomic/riscv.h \
+ 	urcu/uatomic/s390.h \
+ 	urcu/uatomic/sparc64.h \
++	urcu/uatomic/sw64.h \
+ 	urcu/uatomic/tile.h \
+ 	urcu/uatomic/x86.h \
+ 	urcu/urcu-bp.h \
+--- liburcu-0.13.0.orig/include/urcu/arch.h
++++ liburcu-0.13.0/include/urcu/arch.h
+@@ -162,6 +162,11 @@
+ #define URCU_ARCH_SUPERH 1
+ #include <urcu/arch/superh.h>
+ 
++#elif (defined(__sw_64__) || defined(__sw_64))
++
++#define URCU_ARCH_SW64 1
++#include <urcu/arch/sw64.h>
++
+ #else
+ #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
+ #endif
+--- /dev/null
++++ liburcu-0.13.0/include/urcu/arch/sw64.h
+@@ -0,0 +1,42 @@
++#ifndef _URCU_ARCH_SW64_H
++#define _URCU_ARCH_SW64_H
++
++/*
++ * arch_sw64.h: trivial definitions for the Sunway architecture.
++ *
++ * Copyright (c) 2022 Miao Changwei <miaochangwei@uniontech.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <urcu/compiler.h>
++#include <urcu/config.h>
++#include <urcu/syscall-compat.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define cmm_mb()			__asm__ __volatile__ ("memb":::"memory")
++#define cmm_wmb()			__asm__ __volatile__ ("memb":::"memory")
++#define cmm_read_barrier_depends()	__asm__ __volatile__ ("memb":::"memory")
++
++#ifdef __cplusplus
++}
++#endif
++
++#include <urcu/arch/generic.h>
++
++#endif /* _URCU_ARCH_SW64_H */
+--- liburcu-0.13.0.orig/include/urcu/uatomic.h
++++ liburcu-0.13.0/include/urcu/uatomic.h
+@@ -53,6 +53,8 @@
+ #include <urcu/uatomic/riscv.h>
+ #elif defined(URCU_ARCH_SUPERH)
+ #include <urcu/uatomic/superh.h>
++#elif defined(URCU_ARCH_SW64)
++#include <urcu/uatomic/sw64.h>
+ #else
+ #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
+ #endif
+--- /dev/null
++++ liburcu-0.13.0/include/urcu/uatomic/sw64.h
+@@ -0,0 +1,32 @@
++#ifndef _URCU_UATOMIC_ARCH_SW64_H
++#define _URCU_UATOMIC_ARCH_SW64_H
++
++/*
++ * Atomic exchange operations for the Sunway architecture. Let GCC do it.
++ *
++ * Copyright (c) 2022 Miao Changwei <miaochangwei@uniontech.com.com>
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ */
++
++#include <urcu/compiler.h>
++#include <urcu/system.h>
++#include <urcu/uatomic/generic.h>
++
++#endif /* _URCU_UATOMIC_ARCH_SW64_H */

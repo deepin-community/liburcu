@@ -1,0 +1,3 @@
+include-sh4-arch.patch
+regtest-without-bench.patch
+add-sunway-support.patch
