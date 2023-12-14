@@ -1,14 +1,31 @@
-liburcu (0.13.0.1-1+dde) UNRELEASED; urgency=medium
+liburcu (0.14.0-1+loong64) unreleased; urgency=medium
 
-  * update
+  * Add patch to support loong64
 
- -- Jon Bernard <jbernard@debian.org>  Tue, 26 Jul 2022 11:15:41 +0800
+ -- John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>  Sun, 03 Sep 2023 10:31:08 +0200
 
-liburcu (0.13.0.1-1+dde) unstable; urgency=medium
+liburcu (0.14.0-1) unstable; urgency=medium
 
-  * Add sunway support.
+  * [b470d6b] New upstream version 0.14.0 (Closes: #1032717)
+  * [34a5016] Refresh patches for 0.14.0
+  * [25af42b] Update symbols for 0.14.0
+  * [ba4f49b] Update debian/copyright
 
- -- Miao Changwei <miaochangwei@uniontech.com>  Sat, 14 May 2022 18:58:04 +0800
+ -- Michael Jeanson <mjeanson@debian.org>  Mon, 12 Jun 2023 15:59:15 -0400
+
+liburcu (0.13.2-1) unstable; urgency=medium
+
+  * [05fc1d0] New upstream version 0.13.2
+  * [95b7bdb] Update d/copyright
+  * [9bc5b15] Bump standards version to 4.6.1.0
+
+ -- Michael Jeanson <mjeanson@debian.org>  Fri, 19 Aug 2022 12:17:45 -0400
+
+liburcu (0.13.1-1) unstable; urgency=medium
+
+  * [3f7883c] New upstream version 0.13.1
+
+ -- Michael Jeanson <mjeanson@debian.org>  Wed, 05 Jan 2022 15:57:47 -0500
 
 liburcu (0.13.0-3) unstable; urgency=medium
 
