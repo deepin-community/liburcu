@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <urcu/assert.h>
 #include <urcu/uatomic.h>
 #include <urcu/wfstack.h>
 #include "urcu-die.h"
@@ -126,7 +127,7 @@ static inline
 void urcu_adaptative_wake_up(struct urcu_wait_node *wait)
 {
 	cmm_smp_mb();
-	assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
+	urcu_posix_assert(uatomic_read(&wait->state) == URCU_WAIT_WAITING);
 	uatomic_set(&wait->state, URCU_WAIT_WAKEUP);
 	if (!(uatomic_read(&wait->state) & URCU_WAIT_RUNNING)) {
 		if (futex_noasync(&wait->state, FUTEX_WAKE, 1,
@@ -153,15 +154,26 @@ void urcu_adaptative_busy_wait(struct urcu_wait_node *wait)
 			goto skip_futex_wait;
 		caa_cpu_relax();
 	}
-	while (futex_noasync(&wait->state, FUTEX_WAIT, URCU_WAIT_WAITING,
-			NULL, NULL, 0)) {
+	while (uatomic_read(&wait->state) == URCU_WAIT_WAITING) {
+		if (!futex_noasync(&wait->state, FUTEX_WAIT, URCU_WAIT_WAITING, NULL, NULL, 0)) {
+			/*
+			 * Prior queued wakeups queued by unrelated code
+			 * using the same address can cause futex wait to
+			 * return 0 even through the futex value is still
+			 * URCU_WAIT_WAITING (spurious wakeups). Check
+			 * the value again in user-space to validate
+			 * whether it really differs from
+			 * URCU_WAIT_WAITING.
+			 */
+			continue;
+		}
 		switch (errno) {
-		case EWOULDBLOCK:
+		case EAGAIN:
 			/* Value already changed. */
 			goto skip_futex_wait;
 		case EINTR:
 			/* Retry if interrupted by signal. */
-			break;	/* Get out of switch. */
+			break;	/* Get out of switch. Check again. */
 		default:
 			/* Unexpected error. */
 			urcu_die(errno);
@@ -183,7 +195,7 @@ skip_futex_wait:
 	}
 	while (!(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN))
 		poll(NULL, 0, 10);
-	assert(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN);
+	urcu_posix_assert(uatomic_read(&wait->state) & URCU_WAIT_TEARDOWN);
 }
 
 static inline
