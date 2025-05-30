@@ -1,3 +1,9 @@
+liburcu (0.14.0-1+loong64+deepin1) unstable; urgency=medium
+
+  * feat: add sw64 support.
+
+ -- hudeng <hudeng@deepin.org>  Fri, 30 May 2025 09:11:18 +0800
+
 liburcu (0.14.0-1+loong64) unreleased; urgency=medium
 
   * Add patch to support loong64
