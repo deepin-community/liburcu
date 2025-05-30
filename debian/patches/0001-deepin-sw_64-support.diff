@@ -1,0 +1,167 @@
+diff --git a/LICENSE b/LICENSE
+index acf13d7..dafd3df 100644
+--- a/LICENSE
++++ b/LICENSE
+@@ -48,6 +48,7 @@ uatomic/loongarch.h
+ uatomic/mips.h
+ uatomic/nios2.h
+ uatomic/s390.h
++uatomic/sw64.h
+ system.h
+ 
+ 
+diff --git a/include/Makefile.am b/include/Makefile.am
+index de0290e..e8aa0a2 100644
+--- a/include/Makefile.am
++++ b/include/Makefile.am
+@@ -16,6 +16,7 @@ nobase_include_HEADERS = \
+ 	urcu/arch/s390.h \
+ 	urcu/arch/sparc64.h \
+ 	urcu/arch/superh.h \
++	urcu/arch/sw64.h \
+ 	urcu/arch/tile.h \
+ 	urcu/arch/x86.h \
+ 	urcu/assert.h \
+@@ -79,6 +80,7 @@ nobase_include_HEADERS = \
+ 	urcu/uatomic/s390.h \
+ 	urcu/uatomic/sparc64.h \
+ 	urcu/uatomic/superh.h \
++	urcu/uatomic/sw64.h \
+ 	urcu/uatomic/tile.h \
+ 	urcu/uatomic/x86.h \
+ 	urcu/urcu-bp.h \
+diff --git a/include/Makefile.in b/include/Makefile.in
+index 2776523..8e7e664 100644
+--- a/include/Makefile.in
++++ b/include/Makefile.in
+@@ -339,6 +339,7 @@ nobase_include_HEADERS = \
+ 	urcu/arch/riscv.h \
+ 	urcu/arch/s390.h \
+ 	urcu/arch/sparc64.h \
++	urcu/arch/sw64.h \
+ 	urcu/arch/tile.h \
+ 	urcu/arch/x86.h \
+ 	urcu/assert.h \
+@@ -400,6 +401,7 @@ nobase_include_HEADERS = \
+ 	urcu/uatomic/riscv.h \
+ 	urcu/uatomic/s390.h \
+ 	urcu/uatomic/sparc64.h \
++	urcu/uatomic/sw64.h \
+ 	urcu/uatomic/tile.h \
+ 	urcu/uatomic/x86.h \
+ 	urcu/urcu-bp.h \
+diff --git a/include/urcu/arch.h b/include/urcu/arch.h
+index 058476a..c1dddea 100644
+--- a/include/urcu/arch.h
++++ b/include/urcu/arch.h
+@@ -178,6 +178,11 @@
+ #define URCU_ARCH_LOONGARCH 1
+ #include <urcu/arch/loongarch.h>
+ 
++#elif (defined(__sw_64__) || defined(__sw_64))
++
++#define URCU_ARCH_SW64 1
++#include <urcu/arch/sw64.h>
++
+ #else
+ #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
+ #endif
+diff --git a/include/urcu/arch/sw64.h b/include/urcu/arch/sw64.h
+new file mode 100644
+index 0000000..b0f352d
+--- /dev/null
++++ b/include/urcu/arch/sw64.h
+@@ -0,0 +1,42 @@
++#ifndef _URCU_ARCH_SW64_H
++#define _URCU_ARCH_SW64_H
++
++/*
++ * arch_sw64.h: trivial definitions for the Sunway architecture.
++ *
++ * Copyright (c) 2022 Miao Changwei <miaochangwei@uniontech.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <urcu/compiler.h>
++#include <urcu/config.h>
++#include <urcu/syscall-compat.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define cmm_mb()			__asm__ __volatile__ ("memb":::"memory")
++#define cmm_wmb()			__asm__ __volatile__ ("memb":::"memory")
++#define cmm_read_barrier_depends()	__asm__ __volatile__ ("memb":::"memory")
++
++#ifdef __cplusplus
++}
++#endif
++
++#include <urcu/arch/generic.h>
++
++#endif /* _URCU_ARCH_SW64_H */
+diff --git a/include/urcu/uatomic.h b/include/urcu/uatomic.h
+index b639184..0f460f5 100644
+--- a/include/urcu/uatomic.h
++++ b/include/urcu/uatomic.h
+@@ -55,6 +55,8 @@
+ #include <urcu/uatomic/loongarch.h>
+ #elif defined(URCU_ARCH_SUPERH)
+ #include <urcu/uatomic/superh.h>
++#elif defined(URCU_ARCH_SW64)
++#include <urcu/uatomic/sw64.h>
+ #else
+ #error "Cannot build: unrecognized architecture, see <urcu/arch.h>."
+ #endif
+diff --git a/include/urcu/uatomic/sw64.h b/include/urcu/uatomic/sw64.h
+new file mode 100644
+index 0000000..12169c3
+--- /dev/null
++++ b/include/urcu/uatomic/sw64.h
+@@ -0,0 +1,32 @@
++#ifndef _URCU_UATOMIC_ARCH_SW64_H
++#define _URCU_UATOMIC_ARCH_SW64_H
++
++/*
++ * Atomic exchange operations for the Sunway architecture. Let GCC do it.
++ *
++ * Copyright (c) 2022 Miao Changwei <miaochangwei@uniontech.com.com>
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ */
++
++#include <urcu/compiler.h>
++#include <urcu/system.h>
++#include <urcu/uatomic/generic.h>
++
++#endif /* _URCU_UATOMIC_ARCH_SW64_H */
